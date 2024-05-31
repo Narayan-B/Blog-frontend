@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link, Routes, Route } from 'react-router-dom';
+import { Link, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppBar, Toolbar, Button, Container } from '@mui/material';
 import Home from './components/Home';
 import Register from './components/Register';
@@ -18,19 +18,34 @@ import './App.css';
 
 export default function App() {
   const { user, handleLogout, handleLogin } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (localStorage.getItem('token')) {
       (async () => {
-        const response = await axios.get('http://localhost:4444/api/users/account', {
-          headers: {
-            authorization: localStorage.getItem('token'),
-          },
-        });
-        handleLogin(response.data);
+        try {
+          const response = await axios.get('http://localhost:4444/api/users/account', {
+            headers: {
+              authorization: localStorage.getItem('token'),
+            },
+          });
+          handleLogin(response.data);
+        } catch (error) {
+          console.error('Error fetching user data', error);
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
       })();
     }
-  }, [handleLogin]);
+  }, [handleLogin, navigate]);
+
+  const handleLogoutClick = () => {
+    localStorage.removeItem('token');
+    handleLogout();
+   
+    navigate('/home')
+    window.location.reload()
+  };
 
   return (
     <div className="App">
@@ -67,12 +82,9 @@ export default function App() {
               <Button color="inherit" component={Link} to="/my-blogs">
                 My Blogs
               </Button>
-              <Button color='inherit' component={Link} to='/home' onClick={() => {
-                  localStorage.removeItem('token');
-                  handleLogout();
-                  window.location.reload()
-              }}>Logout</Button>
-
+              <Button color="inherit" onClick={handleLogoutClick}>
+                Logout
+              </Button>
             </>
           )}
         </Toolbar>
